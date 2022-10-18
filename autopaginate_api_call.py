@@ -79,7 +79,8 @@ class AutoPaginate(Generator):
             raise Exception("something went wrong, and it pulled a new page before running out of things to return")
 
         headers = self.extra_headers
-        params = {self.paging_param: self.next_page_number}.update(self.extra_params)
+        params = {self.paging_param: self.next_page_number}
+        params.update(self.extra_params)
         raw_response = self.session.get(self.url, headers=headers, params=params)
         self.page_data = self.content_into_list(raw_response)
         self.num_returned = len(self.page_data)
