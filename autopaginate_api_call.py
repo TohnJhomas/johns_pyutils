@@ -10,7 +10,7 @@ class AutoPaginate(Generator):
                  data_path,
                  paging_param_name=None,
                  extra_params=None,
-                 extra_headers=None
+                 extra_headers=None,
                  ):
 
         self.url = url
@@ -64,16 +64,15 @@ class AutoPaginate(Generator):
 
     def _next_page(self):
         if self.pagination_type == "offset":
-            next_page = self._get_offset_page()
+            self._get_offset_page()
         elif self.pagination_type == "cursor":
-            next_page = self._get_cursor_page()
+            self._get_cursor_page()
         elif self.pagination_type == "url":
-            next_page = self._get_url_page()
+            self._get_url_page()
         elif self.pagination_type == "page_number":
-            next_page = self._get_num_page()
+            self._get_num_page()
         else:
             raise ValueError('Unknown pagination type, try "page_number", "offset", "cursor", or "url"')
-        self.raw_page = next_page
 
     def _get_num_page(self):
         if self.page_data:
@@ -108,12 +107,12 @@ class AutoPaginate(Generator):
         raw_response = self.session.get(self.url, headers=headers, params=params)
         self.page_data = self.content_into_list(raw_response)
 
+        parsed_response = json.loads(raw_response.content)
+
         try:
-            self.next_cursor = json.loads(raw_response.content)[self.paging_param]
+            self.next_cursor = parsed_response[self.paging_param]
         except KeyError:
             self.is_last_page = True
-
-
 
     def _get_url_page(self):
         raise NotImplementedError
@@ -131,3 +130,4 @@ class AutoPaginate(Generator):
         else:
             raise ValueError("Unexpected data type for `data_path`: {}, use Str or List".format(type(self.data_path)))
         return output
+
