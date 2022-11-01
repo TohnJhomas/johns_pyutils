@@ -1,6 +1,7 @@
 from collections.abc import Generator
 import json
 
+
 class AutoPaginate(Generator):
     def __init__(self,
                  session,
@@ -8,9 +9,9 @@ class AutoPaginate(Generator):
                  pagination_type: str,
                  data_path,
                  paging_param_name=None,
-                 extra_params={},
-                 extra_headers={}
-                 ) -> Generator:
+                 extra_params=None,
+                 extra_headers=None
+                 ):
 
         self.url = url
         self.pagination_type = pagination_type
@@ -59,7 +60,7 @@ class AutoPaginate(Generator):
         return self.page_data.pop(0)
 
     def throw(self, typ, val=None, tb=None):
-        super().throw(typ,val,tb)
+        super().throw(typ, val, tb)
 
     def _next_page(self):
         if self.pagination_type == "offset":
@@ -98,7 +99,21 @@ class AutoPaginate(Generator):
         raise NotImplementedError
 
     def _get_cursor_page(self):
-        raise NotImplementedError
+        headers = self.extra_headers
+        if self.next_cursor:
+            params = {self.paging_param: self.next_cursor}
+        else:
+            params = {}
+        params.update(self.extra_params)
+        raw_response = self.session.get(self.url, headers=headers, params=params)
+        self.page_data = self.content_into_list(raw_response)
+
+        try:
+            self.next_cursor = json.loads(raw_response.content)[self.paging_param]
+        except KeyError:
+            self.is_last_page = True
+
+
 
     def _get_url_page(self):
         raise NotImplementedError
@@ -106,9 +121,13 @@ class AutoPaginate(Generator):
     def content_into_list(self, raw_page):
         # override this if you want something nuanced
         content = json.loads(raw_page.content)
-        output = content[self.data_path]
+
+        if type(self.data_path) == str:
+            output = content[self.data_path]
+        elif type(self.data_path) == list:
+            output = content
+            for item in self.data_path:
+                output = output[item]
+        else:
+            raise ValueError("Unexpected data type for `data_path`: {}, use Str or List".format(type(self.data_path)))
         return output
-
-
-
-
