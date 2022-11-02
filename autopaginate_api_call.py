@@ -9,6 +9,7 @@ class AutoPaginate(Generator):
                  pagination_type: str,
                  data_path,
                  paging_param_name=None,
+                 cursor_path=None,
                  extra_params=None,
                  extra_headers=None,
                  ):
@@ -22,6 +23,7 @@ class AutoPaginate(Generator):
         self.extra_params = extra_params
         self.paging_param = paging_param_name
         self.is_last_page = False
+        self.cursor_path = cursor_path
 
         # page number pagination
         self.next_page_number = 1
@@ -110,7 +112,7 @@ class AutoPaginate(Generator):
         parsed_response = json.loads(raw_response.content)
 
         try:
-            self.next_cursor = parsed_response[self.paging_param]
+            self.next_cursor = self.get_value_from_path(parsed_response, self.cursor_path)
         except KeyError:
             self.is_last_page = True
 
@@ -121,13 +123,17 @@ class AutoPaginate(Generator):
         # override this if you want something nuanced
         content = json.loads(raw_page.content)
 
-        if type(self.data_path) == str:
-            output = content[self.data_path]
-        elif type(self.data_path) == list:
-            output = content
-            for item in self.data_path:
-                output = output[item]
-        else:
-            raise ValueError("Unexpected data type for `data_path`: {}, use Str or List".format(type(self.data_path)))
+        output = self.get_value_from_path(content, self.data_path)
         return output
 
+    @staticmethod
+    def get_value_from_path(content, path):
+        if type(path) == str:
+            output = content[path]
+        elif type(path) == list:
+            output = content
+            for item in path:
+                output = output[item]
+        else:
+            raise ValueError("Unexpected data type for `path`: {}, use Str or List".format(type(path)))
+        return output
