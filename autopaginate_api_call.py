@@ -19,11 +19,19 @@ class AutoPaginate(Generator):
         self.session = session
         self.data_path = data_path
         self.raw_page = None
-        self.extra_headers = extra_headers
-        self.extra_params = extra_params
         self.paging_param = paging_param_name
         self.is_last_page = False
         self.cursor_path = cursor_path
+
+        if extra_params is None:
+            self.extra_params = {}
+        else:
+            self.extra_params = extra_params
+
+        if extra_headers is None:
+            self.extra_headers = {}
+        else:
+            self.extra_headers = extra_headers
 
         # page number pagination
         self.next_page_number = 1
